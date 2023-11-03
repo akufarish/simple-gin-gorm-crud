@@ -1,9 +1,12 @@
 package muridController
 
 import (
+	"fmt"
 	"gorm/models"
+	"log"
 	"net/http"
-
+	"path/filepath"
+	"crypto/rand"
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
@@ -39,10 +42,24 @@ func Show(c *gin.Context)  {
 func Store(c *gin.Context)  {
 	var dataMurid models.Murid
 
-	if err := c.ShouldBindJSON(&dataMurid); err != nil {
-		c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
-		return
+	c.Bind(&dataMurid)
+	
+	// if err := c.Bind(&dataMurid); err != nil {
+		// 	c.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"message": err.Error()})
+		// 	return
+	// }
+	
+	file, _ := c.FormFile("image")
+	log.Println(file.Filename)
+	hash, err := rand.Read([]byte(file.Filename))
+
+	if err != nil {
+		fmt.Println(err)
 	}
+
+	dataMurid.Img = fmt.Sprint(hash)
+	filepath := filepath.Join("img", dataMurid.Img + ".png")
+	c.SaveUploadedFile(file, filepath)
 
 	models.DB.Create(&dataMurid)
 	c.IndentedJSON(http.StatusCreated, gin.H{"murid": dataMurid})
